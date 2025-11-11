@@ -1,22 +1,18 @@
+// app/index.tsx
 import React, { useState, useEffect } from "react";
 import { View, Text, Button, StyleSheet, Image, Alert, Platform } from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import { StackNavigationProp } from "@react-navigation/stack";
+import { RootStackParamList , Hero } from "./types";
 
-interface Hero {
-  name: string;
-  profile: any;
-  type: string;
-  stats: {
-    agi: number;
-    str: number;
-    int: number;
-  };
-}
 
+type NavigationProp = StackNavigationProp<RootStackParamList, "index">;
 export default function Index() {
-  const [heroes] = useState<Hero[]>([
-    { name: "Omniknight", profile: require("../assets/images/paladin.jpg"), type: "Paladin", stats: { agi: 12, str: 18, int: 9 } },
-    { name: "Lina", profile: require("../assets/images/sorcerer.jpg"), type: "Sorcerer", stats: { agi: 12, str: 9, int: 18 } },
-    { name: "Axe", profile: require("../assets/images/warrior.jpg"), type: "Warrior", stats: { agi: 15, str: 15, int: 11 } },
+   const navigation = useNavigation<NavigationProp>();
+   const [heroes] = useState<Hero[]>([
+    { name: "Omniknight", profile: require("../assets/images/paladin.jpg"), type: "Paladin", stats: {hp:500, agi: 12, str: 18, int: 9 } },
+    { name: "Lina", profile: require("../assets/images/sorcerer.jpg"), type: "Sorcerer", stats: {hp:450, agi: 12, str: 9, int: 18 } },
+    { name: "Axe", profile: require("../assets/images/warrior.jpg"), type: "Warrior", stats: {hp:600, agi: 15, str: 15, int: 11 } },
   ]);
 
   const [heroIndex, setHeroIndex] = useState<number>(0);
@@ -67,20 +63,7 @@ export default function Index() {
     setCounter((prev) => Math.min(prev + 1, 10));
   };
 
-  // =====================================Choose hero============================
-  const chooseHero = () => {
-    if (Platform.OS === "web") {
-      alert(
-        `You chose ${hero.name}!\nAGI: ${tempStats.agi}, STR: ${tempStats.str}, INT: ${tempStats.int}`
-      );
-    } else {
-      Alert.alert(
-        "Hero Chosen",
-        `${hero.name}\nAGI: ${tempStats.agi}, STR: ${tempStats.str}, INT: ${tempStats.int}`
-      );
-    }
-  };
-
+  
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Remaining Points: {counter}</Text>
@@ -118,7 +101,10 @@ export default function Index() {
       </View>
 
       <View style={styles.hero}>
-        <Button title="Choose your hero" onPress={chooseHero} />
+        <Button title="Choose your hero" onPress={() => navigation.navigate("fight", {
+          hero: hero,
+          stats: tempStats
+        })} />
       </View>
     </View>
   );
