@@ -2,23 +2,13 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Platform, Alert } from "react-native";
 import { useRoute, RouteProp, useNavigation } from "@react-navigation/native";
-import { RootStackParamList, Hero } from "./types";
+import { RootStackParamList , Enemy } from "./types";
 import { StackNavigationProp } from "@react-navigation/stack";
 
 type FightRouteProp = RouteProp<RootStackParamList, "fight">;
 type NavigationProp = StackNavigationProp<RootStackParamList, "fight">;
 
-interface Enemy {
-  name: string;
-  profile: any;
-  type: string;
-  stats: {
-    agi: number;
-    str: number;
-    int: number;
-    hp: number;
-  };
-}
+
 
 export default function Fight() {
   const route = useRoute<FightRouteProp>();
@@ -38,7 +28,7 @@ export default function Fight() {
   useEffect(() => {
     const random = enemies[Math.floor(Math.random() * enemies.length)];
     setCurrentEnemy(random);
-  }, []);
+  }, [enemies]);
 
   useEffect(() => {
     if (!currentEnemy) return;
@@ -118,8 +108,9 @@ export default function Fight() {
           <Text style={styles.buttonText}>Attack!</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.navigate("index")}>
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.navigate("heroes")}>
           <Text style={styles.buttonText}>Back to Hero Selection</Text>
+ 
         </TouchableOpacity>
       </View>
 
