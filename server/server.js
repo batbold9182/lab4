@@ -21,7 +21,13 @@ const Hero = mongoose.model(
     name: String,
     profile: String,
     type: String,
-    stats: { hp: Number, agi: Number, str: Number, int: Number }
+    stats: { hp: Number, agi: Number, str: Number, int: Number },
+    icons: {
+      hp: String,
+      agi: String,
+      str: String,
+      int: String,
+    }
   }),
   "heroes" // points to 'heroes' collection
 );
@@ -30,8 +36,15 @@ const Character = mongoose.model(
   new mongoose.Schema({
     name: String,
     profile: String, // URL to image
+    
     type: String,
-    stats: { hp: Number, agi: Number, str: Number, int: Number }
+    stats: { hp: Number, agi: Number, str: Number, int: Number },
+    icons: {
+      hp: String,
+      agi: String,
+      str: String,
+      int: String,
+    }
   }),
   "characters" // collection name
 );
@@ -41,7 +54,13 @@ const Equipment = mongoose.model(
     name: String,
     type: String,
     stats: { hp: Number, agi: Number, str: Number, int: Number },
-    profile: String
+    profile: String,
+    icons: {
+      hp: String,
+      agi: String,
+      str: String,
+      int: String,
+    }
   }),
   "equipment" // collection name
 );

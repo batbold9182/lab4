@@ -1,6 +1,14 @@
-// app/heroes.tsx
 import React, { useState, useEffect } from "react";
-import { View, Text, Button, StyleSheet, Image, Alert, Platform, ScrollView } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  Alert,
+  Platform,
+  ScrollView,
+  TouchableOpacity,
+} from "react-native";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList, Hero, Equipment } from "./types";
@@ -21,14 +29,15 @@ export default function Heroes() {
   const [userPoints, setUserPoints] = useState({ agi: 0, str: 0, int: 0 });
   const [counter, setCounter] = useState<number>(10);
 
-  const equipmentBonus: Equipment["stats"] = selectedEquipment?.stats ?? { hp: 0, agi: 0, str: 0, int: 0 };
+  const equipmentBonus: Equipment["stats"] =
+    selectedEquipment?.stats ?? { hp: 0, agi: 0, str: 0, int: 0 };
 
   useEffect(() => {
     setUserPoints({ agi: 0, str: 0, int: 0 });
     setCounter(10);
   }, [hero, selectedEquipment]);
 
-  // Fetch heroes from backend
+  // Fetch heroes
   useEffect(() => {
     const fetchHeroes = async () => {
       try {
@@ -37,7 +46,9 @@ export default function Heroes() {
         setHeroes(data);
       } catch (err) {
         console.error("Failed to fetch heroes:", err);
-        Platform.OS === "web" ? alert("Failed to fetch heroes") : Alert.alert("Error", "Failed to fetch heroes");
+        Platform.OS === "web"
+          ? alert("Failed to fetch heroes")
+          : Alert.alert("Error", "Failed to fetch heroes");
       }
     };
     fetchHeroes();
@@ -45,7 +56,8 @@ export default function Heroes() {
 
   const handleHeroChange = (direction: "prev" | "next") => {
     if (!heroes.length) return;
-    if (direction === "next") setHeroIndex((prev) => (prev + 1) % heroes.length);
+    if (direction === "next")
+      setHeroIndex((prev) => (prev + 1) % heroes.length);
     else setHeroIndex((prev) => (prev - 1 + heroes.length) % heroes.length);
   };
 
@@ -71,71 +83,237 @@ export default function Heroes() {
     setCounter((prev) => prev + 1);
   };
 
-  if (!heroes.length) {
-    return <Text>Loading heroes...</Text>;
-  }
+  if (!heroes.length) return <Text>Loading heroes...</Text>;
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Remaining Points: {counter}</Text>
 
-      {/* Hero Switcher */}
+      {/* Hero Switch */}
       <View style={styles.heroSwitch}>
-        <Button title="<" onPress={() => handleHeroChange("prev")} />
+        <TouchableOpacity
+          style={styles.switchButton}
+          onPress={() => handleHeroChange("prev")}
+        >
+          <Text style={styles.switchText}>◀</Text>
+        </TouchableOpacity>
+
         <Text style={styles.heroName}>{hero.name}</Text>
-        <Button title=">" onPress={() => handleHeroChange("next")} />
+
+        <TouchableOpacity
+          style={styles.switchButton}
+          onPress={() => handleHeroChange("next")}
+        >
+          <Text style={styles.switchText}>▶</Text>
+        </TouchableOpacity>
       </View>
 
-      <Image source={{ uri: hero.profile }} style={{ width: 100, height: 100, margin: 10, borderRadius: 10 }} />
-      <Text style={{ fontSize: 16, marginBottom: 10 }}>{hero.type}</Text>
+      <Image
+        source={{ uri: hero.profile }}
+        style={styles.heroImage}
+      />
+      <Text style={styles.heroType}>{hero.type}</Text>
 
-      {/* Stats display */}
-      {(["agi", "str", "int"] as const).map((stat) => (
+      {/* Stats */}
+            <View style={styles.statsCard}>
+              {(["agi", "str", "int"] as const).map((stat) => (
         <View key={stat} style={styles.row}>
+          
+          {/* Icon */}
+          <Image
+            source={{ uri: hero?.icons?.[stat] }}
+            style={styles.statIcon}
+          />
+
+          {/* Label */}
           <Text style={styles.label}>
-            {stat.toUpperCase()}: {hero.stats[stat] + userPoints[stat]} + ({equipmentBonus[stat]})
+            {stat.toUpperCase()}:{" "}
+            {hero.stats[stat] + userPoints[stat]} + ({equipmentBonus[stat]})
           </Text>
-          <Button title="+" onPress={() => handleIncrement(stat)} />
-          <Button title="-" onPress={() => handleDecrement(stat)} />
+
+          {/* Plus / Minus */}
+          <TouchableOpacity
+            style={styles.plusButton}
+            onPress={() => handleIncrement(stat)}
+          >
+            <Text style={styles.plusMinusText}>+</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.minusButton}
+            onPress={() => handleDecrement(stat)}
+          >
+            <Text style={styles.plusMinusText}>-</Text>
+          </TouchableOpacity>
         </View>
       ))}
 
+      </View>
+
       {/* Navigation Buttons */}
-      <View style={styles.hero}>
-        <Button
-          title="Go to Equipment Selection"
+      <View style={styles.buttonGroup}>
+        <TouchableOpacity
+          style={styles.primaryButton}
           onPress={() => navigation.navigate("equipment")}
-        />
-        <Button
-          title="Choose your hero"
+        >
+          <Text style={styles.buttonText}>Go to Equipment Selection</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity
+          style={styles.primaryButton}
+          onPress={() => navigation.navigate("spell")}
+        >
+          <Text style={styles.buttonText}>Learn spell</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.primaryButton}
           onPress={() => {
-            // Compute final stats
             const finalStats = {
               hp: hero.stats.hp + (equipmentBonus.hp ?? 0),
-              agi: hero.stats.agi + userPoints.agi + (equipmentBonus.agi ?? 0),
-              str: hero.stats.str + userPoints.str + (equipmentBonus.str ?? 0),
-              int: hero.stats.int + userPoints.int + (equipmentBonus.int ?? 0),
+              agi:
+                hero.stats.agi +
+                userPoints.agi +
+                (equipmentBonus.agi ?? 0),
+              str:
+                hero.stats.str +
+                userPoints.str +
+                (equipmentBonus.str ?? 0),
+              int:
+                hero.stats.int +
+                userPoints.int +
+                (equipmentBonus.int ?? 0),
               equipment: selectedEquipment,
             };
 
-            // Navigate to fight screen
             navigation.navigate("fight", {
               hero,
               stats: finalStats,
             });
           }}
-        />
+        >
+          <Text style={styles.buttonText}>Choose Your Hero</Text>
+        </TouchableOpacity>
       </View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flexGrow: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#fff", padding: 20 },
-  heroSwitch: { flexDirection: "row", alignItems: "center", gap: 15, marginBottom: 15 },
-  heroName: { fontSize: 22, fontWeight: "bold" },
-  title: { fontSize: 22, fontWeight: "bold", marginBottom: 20 },
-  row: { flexDirection: "row", alignItems: "center", marginVertical: 10, gap: 10 },
-  label: { fontSize: 18, width: 180 },
-  hero: { alignItems: "center", marginTop: 20 },
+  statIcon:{
+    width: 28,
+    height: 28,
+    marginRight: 10,
+  },
+  container: {
+    flexGrow: 1,
+    alignItems: "center",
+    backgroundColor: "#f5f5f5",
+    padding: 20,
+  },
+
+  title: {
+    fontSize: 24,
+    fontWeight: "bold",
+    marginBottom: 10,
+    color: "#333",
+  },
+
+  heroSwitch: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 15,
+  },
+
+  switchButton: {
+    backgroundColor: "#ddd",
+    padding: 10,
+    borderRadius: 10,
+  },
+
+  switchText: {
+    fontSize: 24,
+    fontWeight: "bold",
+  },
+
+  heroName: {
+    fontSize: 22,
+    fontWeight: "bold",
+    marginHorizontal: 15,
+  },
+
+  heroImage: {
+    width: 130,
+    height: 130,
+    borderRadius: 15,
+    marginBottom: 10,
+  },
+
+  heroType: {
+    fontSize: 16,
+    marginBottom: 10,
+  },
+
+  statsCard: {
+    width: "90%",
+    backgroundColor: "#fff",
+    padding: 15,
+    borderRadius: 12,
+    marginVertical: 10,
+    elevation: 3,
+  },
+
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap:10,
+    marginVertical: 8,
+  },
+
+  label: {
+    fontSize: 18,
+    color: "#444",
+    flex:1,
+  },
+
+  plusButton: {
+    backgroundColor: "#2ecc71",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+  },
+
+  minusButton: {
+    backgroundColor: "#e74c3c",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+  },
+
+  plusMinusText: {
+    color: "white",
+    fontSize: 20,
+    fontWeight: "bold",
+  },
+
+  buttonGroup: {
+    marginTop: 20,
+    width: "100%",
+    alignItems: "center",
+  },
+
+  primaryButton: {
+    backgroundColor: "#3498db",
+    width: "90%",
+    padding: 15,
+    borderRadius: 12,
+    alignItems: "center",
+    marginVertical: 8,
+  },
+
+  buttonText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
 });

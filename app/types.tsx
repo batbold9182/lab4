@@ -9,6 +9,13 @@ export interface Hero {
     int: number;
     hp: number;
   };
+  icons?: { 
+    hp: string;
+    agi: string;
+    str: string;
+    int: string;
+  };
+  
 }
 export interface Equipment {
   name : string;
@@ -20,6 +27,12 @@ export interface Equipment {
     int: number;
     hp: number;
   };
+  icons?: { 
+    hp: string;
+    agi: string;
+    str: string;
+    int: string;
+  };
 }
 export interface Enemy {
   name: string;
@@ -30,6 +43,12 @@ export interface Enemy {
     str: number;
     int: number;
     hp: number;
+  };
+  icons?: {   
+    hp: string;
+    agi: string;
+    str: string;
+    int: string;
   };
 }
 export type RootStackParamList = {
@@ -45,5 +64,12 @@ export type RootStackParamList = {
         hp: number;
         equipment?: Equipment;
     };
+    icons?: {  
+    hp: string;
+    agi: string;
+    str: string;
+    int: string;
+   };
   };
+  spell:undefined;
 };
