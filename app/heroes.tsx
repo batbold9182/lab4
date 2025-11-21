@@ -1,11 +1,10 @@
 // app/heroes.tsx
 import React, { useState, useEffect } from "react";
-import { View, Text, Button, StyleSheet, Image, Alert, Platform } from "react-native";
+import { View, Text, Button, StyleSheet, Image, Alert, Platform, ScrollView } from "react-native";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList, Hero, Equipment } from "./types";
 
-// Type definitions
 type HeroesRouteProp = RouteProp<RootStackParamList, "heroes">;
 type HeroesNavigationProp = StackNavigationProp<RootStackParamList, "heroes">;
 
@@ -15,35 +14,41 @@ export default function Heroes() {
 
   const selectedEquipment = route.params?.selectedEquipment;
 
-  const [heroes] = useState<Hero[]>([
-    { name: "Omniknight", profile: require("../assets/images/paladin.jpg"), type: "Paladin", stats: { hp: 500, agi: 12, str: 18, int: 9 } },
-    { name: "Lina", profile: require("../assets/images/sorcerer.jpg"), type: "Sorcerer", stats: { hp: 450, agi: 12, str: 9, int: 18 } },
-    { name: "Axe", profile: require("../assets/images/warrior.jpg"), type: "Warrior", stats: { hp: 600, agi: 15, str: 15, int: 11 } },
-  ]);
-
+  const [heroes, setHeroes] = useState<Hero[]>([]);
   const [heroIndex, setHeroIndex] = useState<number>(0);
   const hero = heroes[heroIndex];
 
-  // Track user-allocated stat points
   const [userPoints, setUserPoints] = useState({ agi: 0, str: 0, int: 0 });
   const [counter, setCounter] = useState<number>(10);
 
-  // Equipment bonus
   const equipmentBonus: Equipment["stats"] = selectedEquipment?.stats ?? { hp: 0, agi: 0, str: 0, int: 0 };
 
-  // Reset user points and counter whenever hero or equipment changes
   useEffect(() => {
     setUserPoints({ agi: 0, str: 0, int: 0 });
     setCounter(10);
   }, [hero, selectedEquipment]);
 
-  // Hero switching
+  // Fetch heroes from backend
+  useEffect(() => {
+    const fetchHeroes = async () => {
+      try {
+        const res = await fetch("http://192.168.10.10:3003/heroes");
+        const data = await res.json();
+        setHeroes(data);
+      } catch (err) {
+        console.error("Failed to fetch heroes:", err);
+        Platform.OS === "web" ? alert("Failed to fetch heroes") : Alert.alert("Error", "Failed to fetch heroes");
+      }
+    };
+    fetchHeroes();
+  }, []);
+
   const handleHeroChange = (direction: "prev" | "next") => {
+    if (!heroes.length) return;
     if (direction === "next") setHeroIndex((prev) => (prev + 1) % heroes.length);
     else setHeroIndex((prev) => (prev - 1 + heroes.length) % heroes.length);
   };
 
-  // Increment stat
   const handleIncrement = (type: "agi" | "str" | "int") => {
     if (counter <= 0) {
       Platform.OS === "web"
@@ -55,7 +60,6 @@ export default function Heroes() {
     setCounter((prev) => prev - 1);
   };
 
-  // Decrement stat
   const handleDecrement = (type: "agi" | "str" | "int") => {
     if (counter === 10 || userPoints[type] <= 0) {
       Platform.OS === "web"
@@ -67,8 +71,12 @@ export default function Heroes() {
     setCounter((prev) => prev + 1);
   };
 
+  if (!heroes.length) {
+    return <Text>Loading heroes...</Text>;
+  }
+
   return (
-    <View style={styles.container}>
+    <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Remaining Points: {counter}</Text>
 
       {/* Hero Switcher */}
@@ -78,7 +86,7 @@ export default function Heroes() {
         <Button title=">" onPress={() => handleHeroChange("next")} />
       </View>
 
-      <Image source={hero.profile} style={{ width: 100, height: 100, margin: 10, borderRadius: 10 }} />
+      <Image source={{ uri: hero.profile }} style={{ width: 100, height: 100, margin: 10, borderRadius: 10 }} />
       <Text style={{ fontSize: 16, marginBottom: 10 }}>{hero.type}</Text>
 
       {/* Stats display */}
@@ -100,20 +108,30 @@ export default function Heroes() {
         />
         <Button
           title="Choose your hero"
-          onPress={() =>
+          onPress={() => {
+            // Compute final stats
+            const finalStats = {
+              hp: hero.stats.hp + (equipmentBonus.hp ?? 0),
+              agi: hero.stats.agi + userPoints.agi + (equipmentBonus.agi ?? 0),
+              str: hero.stats.str + userPoints.str + (equipmentBonus.str ?? 0),
+              int: hero.stats.int + userPoints.int + (equipmentBonus.int ?? 0),
+              equipment: selectedEquipment,
+            };
+
+            // Navigate to fight screen
             navigation.navigate("fight", {
               hero,
-              stats: { ...hero.stats, ...userPoints, equipment: selectedEquipment },
-            })
-          }
+              stats: finalStats,
+            });
+          }}
         />
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#fff" },
+  container: { flexGrow: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#fff", padding: 20 },
   heroSwitch: { flexDirection: "row", alignItems: "center", gap: 15, marginBottom: 15 },
   heroName: { fontSize: 22, fontWeight: "bold" },
   title: { fontSize: 22, fontWeight: "bold", marginBottom: 20 },

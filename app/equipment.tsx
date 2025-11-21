@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet, Button, Image } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, Text, StyleSheet, Button, Image, Alert, Platform, ScrollView } from "react-native";
 import { Equipment, RootStackParamList } from "./types";
 import { useRoute, RouteProp, useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
@@ -8,31 +8,40 @@ type EquipmentRouteProp = RouteProp<RootStackParamList, "equipment">;
 type EquipmentNavigationProp = StackNavigationProp<RootStackParamList, "equipment">;
 
 export default function EquipmentScreen() {
-  const route = useRoute<EquipmentRouteProp>();
   const navigation = useNavigation<EquipmentNavigationProp>();
-
-  const [equipmentList] = useState<Equipment[]>([
-    { name: "Sword", type: "melee", stats: { hp: 500, agi: 12, str: 18, int: 9 }, profile: require("../assets/images/sword.jpg") },
-    { name: "Axe", type: "range", stats: { hp: 450, agi: 12, str: 9, int: 18 }, profile: require("../assets/images/axe.jpg") },
-    { name: "Staff", type: "melee", stats: { hp: 600, agi: 15, str: 15, int: 11 }, profile: require("../assets/images/staff.jpg") },
-  ]);
-
+  const [equipmentList, setEquipmentList] = useState<Equipment[]>([]);
   const [eqIndex, setEqIndex] = useState<number>(0);
   const eq = equipmentList[eqIndex];
 
+  // Fetch equipment from backend
+  useEffect(() => {
+    const fetchEquipment = async () => {
+      try {
+        const res = await fetch("http://192.168.10.10:3003/equipment");
+        const data: Equipment[] = await res.json();
+        setEquipmentList(data);
+      } catch (err) {
+        console.error("Failed to fetch equipment:", err);
+        Platform.OS === "web"
+          ? alert("Failed to fetch equipment")
+          : Alert.alert("Error", "Failed to fetch equipment");
+      }
+    };
+    fetchEquipment();
+  }, []);
+
   const handleEqChange = (direction: "prev" | "next") => {
-    if (direction === "next") {
-      setEqIndex((prev) => (prev + 1) % equipmentList.length);
-    } else if (direction === "prev") {
-      setEqIndex((prev) => (prev - 1 + equipmentList.length) % equipmentList.length);
-    }
+    if (direction === "next") setEqIndex((prev) => (prev + 1) % equipmentList.length);
+    else setEqIndex((prev) => (prev - 1 + equipmentList.length) % equipmentList.length);
   };
 
+  if (!equipmentList.length) return <Text>Loading equipment...</Text>;
+
   return (
-    <View style={styles.container}>
+    <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Equipment</Text>
 
-      <Image source={eq.profile} style={{ width: 150, height: 150, marginBottom: 10 }} />
+      <Image source={{ uri: eq.profile }} style={{ width: 150, height: 150, marginBottom: 10 }} />
       <Text style={styles.heroName}>{eq.name}</Text>
       <Text>Type: {eq.type}</Text>
       <Text>HP: {eq.stats.hp}</Text>
@@ -42,9 +51,12 @@ export default function EquipmentScreen() {
 
       <View style={styles.row}>
         <Button title="Previous" onPress={() => handleEqChange("prev")} />
-            <Button
-             title="Equip"  onPress={() => {navigation.navigate("heroes", { selectedEquipment: eq });  }}/>
-
+        <Button
+          title="Equip"
+          onPress={() => {
+            navigation.navigate("heroes", { selectedEquipment: eq });
+          }}
+        />
         <Button title="Next" onPress={() => handleEqChange("next")} />
       </View>
 
@@ -52,15 +64,13 @@ export default function EquipmentScreen() {
         Viewing equipment {eqIndex + 1} of {equipmentList.length}
       </Text>
 
-      <Button title ="Back to Hero Selection" onPress={() => navigation.navigate("heroes")}
-       
-      />
-    </View>
+      <Button title="Back to Hero Selection" onPress={() => navigation.navigate("heroes")} />
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#fff" },
+  container: { flexGrow: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#fff", padding: 20 },
   title: { fontSize: 22, fontWeight: "bold", marginBottom: 20 },
   heroName: { fontSize: 20, fontWeight: "bold", marginBottom: 10 },
   row: { flexDirection: "row", alignItems: "center", marginTop: 15, gap: 10 },

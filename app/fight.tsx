@@ -1,35 +1,43 @@
-// app/fight.tsx
 import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Platform, Alert } from "react-native";
 import { useRoute, RouteProp, useNavigation } from "@react-navigation/native";
-import { RootStackParamList , Enemy } from "./types";
+import { RootStackParamList, Enemy } from "./types";
 import { StackNavigationProp } from "@react-navigation/stack";
 
 type FightRouteProp = RouteProp<RootStackParamList, "fight">;
 type NavigationProp = StackNavigationProp<RootStackParamList, "fight">;
-
-
 
 export default function Fight() {
   const route = useRoute<FightRouteProp>();
   const navigation = useNavigation<NavigationProp>();
   const { hero, stats } = route.params;
 
-  const [enemies] = useState<Enemy[]>([
-    { name: "Goblin", profile: require("../assets/images/goblin.jpg"), type: "Rogue", stats: { hp: 500, agi: 14, str: 10, int: 8 } },
-    { name: "Orc", profile: require("../assets/images/orc.jpg"), type: "Brute", stats: { hp: 500, agi: 10, str: 16, int: 6 } },
-    { name: "Troll", profile: require("../assets/images/troll.jpg"), type: "Berserker", stats: { hp: 500, agi: 12, str: 14, int: 7 } },
-  ]);
-
+  const [enemies, setEnemies] = useState<Enemy[]>([]);
   const [currentEnemy, setCurrentEnemy] = useState<Enemy | null>(null);
   const [heroStats, setHeroStats] = useState({ ...stats });
   const [history, setHistory] = useState<string[]>([]);
 
+  // Fetch enemies from server
   useEffect(() => {
-    const random = enemies[Math.floor(Math.random() * enemies.length)];
-    setCurrentEnemy(random);
-  }, [enemies]);
+    const fetchEnemies = async () => {
+      try {
+        const res = await fetch("http://192.168.10.10:3003/characters"); // Replace with your server IP
+        const data: Enemy[] = await res.json();
+        setEnemies(data);
 
+        // Pick random enemy
+        const random = data[Math.floor(Math.random() * data.length)];
+        setCurrentEnemy(random);
+      } catch (err) {
+        console.error(err);
+        Alert.alert("Error", "Failed to fetch enemies from server");
+      }
+    };
+
+    fetchEnemies();
+  }, []);
+
+  // Check for victory or defeat
   useEffect(() => {
     if (!currentEnemy) return;
 
@@ -42,43 +50,43 @@ export default function Fight() {
     }
   }, [heroStats.hp, currentEnemy]);
 
- const attackEnemy = () => {
-  if (!currentEnemy) return;
+  // Attack logic
+  const attackEnemy = () => {
+    if (!currentEnemy) return;
 
-  const heroDamage = Math.floor((((Math.random() * 6) + 1) - 0.5) * heroStats.str);
+    const heroDamage = Math.floor((((Math.random() * 6) + 1) - 0.5) * heroStats.str);
 
-  setCurrentEnemy(prevEnemy => {
-    if (!prevEnemy) return prevEnemy;
+    setCurrentEnemy(prevEnemy => {
+      if (!prevEnemy) return prevEnemy;
 
-    const newEnemyHp = Math.max(0, prevEnemy.stats.hp - heroDamage);
+      const newEnemyHp = Math.max(0, prevEnemy.stats.hp - heroDamage);
 
-    setHistory(prev => [
-      `Hero deals ${heroDamage} damage to ${prevEnemy.name} (Enemy HP: ${newEnemyHp}, Hero HP: ${heroStats.hp})`,
-      ...prev,
-    ]);
+      setHistory(prev => [
+        `Hero deals ${heroDamage} damage to ${prevEnemy.name} (Enemy HP: ${newEnemyHp}, Hero HP: ${heroStats.hp})`,
+        ...prev,
+      ]);
 
-    if (newEnemyHp > 0) {
-      const enemyDamage = Math.floor((((Math.random() * 6) + 1) - 0.5) * prevEnemy.stats.str);
+      if (newEnemyHp > 0) {
+        const enemyDamage = Math.floor((((Math.random() * 6) + 1) - 0.5) * prevEnemy.stats.str);
 
-      setHeroStats(prevHero => {
-        const newHeroHp = Math.max(0, prevHero.hp - enemyDamage);
+        setHeroStats(prevHero => {
+          const newHeroHp = Math.max(0, prevHero.hp - enemyDamage);
 
-        setHistory(prev => [
-          `${prevEnemy.name} deals ${enemyDamage} damage to Hero (Hero HP: ${newHeroHp}, Enemy HP: ${newEnemyHp})`,
-          ...prev,
-        ]);
+          setHistory(prev => [
+            `${prevEnemy.name} deals ${enemyDamage} damage to Hero (Hero HP: ${newHeroHp}, Enemy HP: ${newEnemyHp})`,
+            ...prev,
+          ]);
 
-        return { ...prevHero, hp: newHeroHp };
-      });
-    }
+          return { ...prevHero, hp: newHeroHp };
+        });
+      }
 
-    return {
-      ...prevEnemy,
-      stats: { ...prevEnemy.stats, hp: newEnemyHp },
-    };
-  });
-};
-
+      return {
+        ...prevEnemy,
+        stats: { ...prevEnemy.stats, hp: newEnemyHp },
+      };
+    });
+  };
 
   return (
     <View style={styles.container}>
@@ -96,7 +104,7 @@ export default function Fight() {
       {currentEnemy && (
         <View style={styles.card}>
           <Text style={styles.cardTitle}>{currentEnemy.name} ({currentEnemy.type})</Text>
-          <Image source={currentEnemy.profile} style={styles.enemyImage} />
+          <Image source={{ uri: currentEnemy.profile }} style={styles.enemyImage} />
           <Text>HP: {currentEnemy.stats.hp}</Text>
           <Text>STR: {currentEnemy.stats.str} | AGI: {currentEnemy.stats.agi} | INT: {currentEnemy.stats.int}</Text>
         </View>
@@ -110,7 +118,6 @@ export default function Fight() {
 
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.navigate("heroes")}>
           <Text style={styles.buttonText}>Back to Hero Selection</Text>
- 
         </TouchableOpacity>
       </View>
 
@@ -130,6 +137,7 @@ export default function Fight() {
   );
 }
 
+// Styles remain the same
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#f5f5f5", alignItems: "center", padding: 10 },
   title: { fontSize: 28, fontWeight: "bold", marginVertical: 10 },
